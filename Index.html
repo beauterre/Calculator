@@ -1,0 +1,287 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Calculator</title>
+
+  <meta name="theme-color" content="#f2f2f7">
+  <meta name="description" content="Calculator">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/calculator-192.png">
+  <link rel="apple-touch-icon" href="icons/calculator-192.png">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #f2f2f7;
+      color: #222;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .calculator {
+      width: 100%;
+      max-width: 380px;
+      padding: 24px;
+    }
+
+    .display {
+      width: 100%;
+      min-height: 110px;
+      padding: 20px 8px;
+      text-align: right;
+      font-size: 48px;
+      font-weight: 300;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+
+    .keys {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 50%;
+      aspect-ratio: 1;
+      font-size: 25px;
+      background: #e4e4e9;
+      color: #222;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:active {
+      filter: brightness(0.9);
+    }
+
+    button.operator {
+      background: #ff9f0a;
+      color: white;
+    }
+
+    button.function {
+      background: #d1d1d6;
+    }
+
+    button.zero {
+      grid-column: span 2;
+      aspect-ratio: auto;
+      border-radius: 50px;
+    }
+
+    .install {
+      display: none;
+      margin: 20px auto 0;
+      padding: 12px 24px;
+      border-radius: 24px;
+      background: #333;
+      color: white;
+      font-size: 14px;
+      aspect-ratio: auto;
+    }
+
+    .install.visible {
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="calculator">
+
+    <div class="display" id="display">0</div>
+
+    <div class="keys">
+      <button class="function" data-action="clear">AC</button>
+      <button class="function" data-action="sign">±</button>
+      <button class="function" data-action="percent">%</button>
+      <button class="operator" data-action="operator" data-value="/">÷</button>
+
+      <button data-action="digit" data-value="7">7</button>
+      <button data-action="digit" data-value="8">8</button>
+      <button data-action="digit" data-value="9">9</button>
+      <button class="operator" data-action="operator" data-value="*">×</button>
+
+      <button data-action="digit" data-value="4">4</button>
+      <button data-action="digit" data-value="5">5</button>
+      <button data-action="digit" data-value="6">6</button>
+      <button class="operator" data-action="operator" data-value="-">−</button>
+
+      <button data-action="digit" data-value="1">1</button>
+      <button data-action="digit" data-value="2">2</button>
+      <button data-action="digit" data-value="3">3</button>
+      <button class="operator" data-action="operator" data-value="+">+</button>
+
+      <button class="zero" data-action="digit" data-value="0">0</button>
+      <button data-action="decimal">.</button>
+      <button class="operator" data-action="equals">=</button>
+    </div>
+
+    <button class="install" id="installButton">
+      Install app
+    </button>
+
+  </main>
+
+  <script>
+    const display = document.getElementById("display");
+    const installButton = document.getElementById("installButton");
+
+    let current = "0";
+    let previous = null;
+    let operator = null;
+    let resetNext = false;
+
+    function updateDisplay() {
+      display.textContent = current;
+    }
+
+    function inputDigit(digit) {
+      if (resetNext) {
+        current = digit;
+        resetNext = false;
+      } else {
+        current = current === "0" ? digit : current + digit;
+      }
+      updateDisplay();
+    }
+
+    function inputDecimal() {
+      if (resetNext) {
+        current = "0";
+        resetNext = false;
+      }
+
+      if (!current.includes(".")) {
+        current += ".";
+      }
+
+      updateDisplay();
+    }
+
+    function calculate() {
+      if (previous === null || operator === null) return;
+
+      const a = Number(previous);
+      const b = Number(current);
+      let result;
+
+      switch (operator) {
+        case "+": result = a + b; break;
+        case "-": result = a - b; break;
+        case "*": result = a * b; break;
+        case "/": result = b === 0 ? "Error" : a / b; break;
+      }
+
+      current = result === "Error"
+        ? result
+        : String(Number(result.toPrecision(12)));
+
+      previous = null;
+      operator = null;
+      resetNext = true;
+      updateDisplay();
+    }
+
+    function chooseOperator(op) {
+      if (current === "Error") return;
+
+      if (operator && !resetNext) {
+        calculate();
+      }
+
+      previous = current;
+      operator = op;
+      resetNext = true;
+    }
+
+    function handleAction(action, value) {
+      if (action === "digit") inputDigit(value);
+      if (action === "decimal") inputDecimal();
+
+      if (action === "clear") {
+        current = "0";
+        previous = null;
+        operator = null;
+        resetNext = false;
+        updateDisplay();
+      }
+
+      if (action === "sign" && current !== "Error") {
+        current = String(-Number(current));
+        updateDisplay();
+      }
+
+      if (action === "percent" && current !== "Error") {
+        current = String(Number(current) / 100);
+        updateDisplay();
+      }
+
+      if (action === "operator") chooseOperator(value);
+      if (action === "equals") calculate();
+    }
+
+    document.querySelector(".keys").addEventListener("click", event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      handleAction(button.dataset.action, button.dataset.value);
+    });
+
+    // Future magic tricks can be added here.
+    // Keep the normal calculator interface as the cover.
+
+    // PWA installation
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      deferredPrompt = event;
+
+      installButton.classList.add("visible");
+    });
+
+    installButton.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt();
+
+      const result = await deferredPrompt.userChoice;
+
+      if (result.outcome === "accepted") {
+        installButton.classList.remove("visible");
+      }
+
+      deferredPrompt = null;
+    });
+
+    window.addEventListener("appinstalled", () => {
+      installButton.classList.remove("visible");
+    });
+
+    // Service worker registration
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./worker.js")
+          .catch(error => console.error("SW registration failed:", error));
+      });
+    }
+  </script>
+
+</body>
+</html>
