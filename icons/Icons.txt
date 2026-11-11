@@ -1,1 +1,2 @@
-
+save as PNG 192x192
+icons/calculator-192.png
